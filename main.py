@@ -30,13 +30,11 @@ def get_playlist_id() -> str:
 
 def get_playlist_items(playlist_id: str):
     response = spotify.playlist_items(playlist_id)
-    if response is None:
-        return []
-    items, total = response['items'], response['total']
-    while len(items) < total:
-        response = spotify.playlist_items(playlist_id, offset=len(items))
-        if response is None:
-            return items
+    assert response is not None, "Problem with getting playlist items"
+    items = response['items']
+    while response['next']:
+        response = spotify.next(response)
+        assert response is not None, "Problem with getting playlist items"
         items += response['items']
     return items
 
@@ -59,7 +57,7 @@ def create_chunks(arr: List[T], chunk_size: int) -> Iterable[List[T]]:
         end = start + chunk_size
         yield arr[start:end]
 
-def remove_saved(ids: List[str]):
+def get_saved_ids(ids: List[str]):
     saved_ids: List[bool] = []
     for chunk in create_chunks(ids, 50):
         response = spotify.current_user_saved_tracks_contains(chunk)
@@ -67,20 +65,37 @@ def remove_saved(ids: List[str]):
     if len(saved_ids) != len(ids):
         print(len(saved_ids), len(ids))
         assert False, "There must be the same amount of elements for the filter to work"
-    return [id for idx, id in enumerate(ids) if not saved_ids[idx]]
+    return saved_ids
 
-def add_songs(ids: List[str]):
+def filter_by_saved(ids: List[str], get_saved = False):
+    saved_ids = get_saved_ids(ids)
+    return [ids[idx] for idx, saved in enumerate(saved_ids) if (saved if get_saved else not saved)]
+
+def add_songs_to_pending_playlist(ids: List[str]):
     for chunk in create_chunks(ids, 100):
         try:
             spotify.playlist_add_items(PENDING_PLAYLIST, chunk)
         except SpotifyException as err:
             print(err)
 
+def remove_songs(ids: List[str], playlist_id: str):
+    for chunk in create_chunks(ids, 100):
+        try:
+            spotify.playlist_remove_all_occurrences_of_items(playlist_id, chunk)
+        except SpotifyException as err:
+            print(err)
+
+def remove_saved_songs_of_pending_playlist():
+    ids = get_tracks_ids(PENDING_PLAYLIST)
+    saved_ids = filter_by_saved(ids, get_saved=True)
+    remove_songs(saved_ids, PENDING_PLAYLIST)
+
 def main():
+    remove_saved_songs_of_pending_playlist()
     playlist_id = get_playlist_id()
     ids = get_tracks_ids(playlist_id)
-    unsaved_ids = remove_saved(ids)
-    add_songs(unsaved_ids)
+    unsaved_ids = filter_by_saved(ids)
+    add_songs_to_pending_playlist(unsaved_ids)
 
 if __name__ == "__main__":
     main()
