@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from math import ceil
-from typing import Iterable, List, Optional, TypeVar, TypedDict
+from typing import Any, Iterable, List, Optional, TypeVar, TypedDict
 from os import environ
 
 from spotipy import Spotify
@@ -22,21 +22,29 @@ class Track(TypedDict):
 class Item(TypedDict):
     track: Optional[Track]
 
-def get_playlist_id() -> str:
+def get_collection_id() -> str:
     parser = ArgumentParser(description='spotify-dl allows you to download your spotify songs')
-    parser.add_argument('--playlist', nargs=1, help="spotify track id", required=True)
+    parser.add_argument('--collection', nargs=1, help="spotify playlist/album id", required=True)
     args = parser.parse_args()
-    return args.playlist[0]
+    return args.collection[0]
+
+def get_all_items(response: Any):
+    items = response['items']
+    while response['next']:
+        response = spotify.next(response)
+        assert response is not None, "Problem with getting items"
+        items += response['items']
+    return items
 
 def get_playlist_items(playlist_id: str):
     response = spotify.playlist_items(playlist_id)
     assert response is not None, "Problem with getting playlist items"
-    items = response['items']
-    while response['next']:
-        response = spotify.next(response)
-        assert response is not None, "Problem with getting playlist items"
-        items += response['items']
-    return items
+    return get_all_items(response)
+
+def get_album_items(album_id: str):
+    response = spotify.album_tracks(album_id)
+    assert response is not None, "Problem with getting album items"
+    return get_all_items(response)
 
 def id_is_safe(item: Optional[Item]):
     if item is None:
@@ -46,8 +54,13 @@ def id_is_safe(item: Optional[Item]):
         return False
     return track['id'] is not None
 
-def get_tracks_ids(playlist_id: str):
-    items = get_playlist_items(playlist_id)
+def get_tracks_ids(collection_id: str):
+    if "playlist" in collection_id:
+        items = get_playlist_items(collection_id)
+    elif "album" in collection_id:
+        items = get_album_items(collection_id)
+    else:
+        items = get_playlist_items(collection_id)
     return [item['track']['id'] for item in tqdm(items, 'Getting playlist tracks') if id_is_safe(item)]
 
 def create_chunks(arr: List[T], chunk_size: int) -> Iterable[List[T]]:
@@ -86,14 +99,16 @@ def remove_songs(ids: List[str], playlist_id: str):
             print(err)
 
 def remove_saved_songs_of_pending_playlist():
+    print("Removing saved songs")
     ids = get_tracks_ids(PENDING_PLAYLIST)
     saved_ids = filter_by_saved(ids, get_saved=True)
     remove_songs(saved_ids, PENDING_PLAYLIST)
+    print("Removed saved songs")
 
 def main():
     remove_saved_songs_of_pending_playlist()
-    playlist_id = get_playlist_id()
-    ids = get_tracks_ids(playlist_id)
+    collection_id = get_collection_id()
+    ids = get_tracks_ids(collection_id)
     unsaved_ids = filter_by_saved(ids)
     add_songs_to_pending_playlist(unsaved_ids)
 
