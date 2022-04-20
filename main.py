@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 PENDING_PLAYLIST = environ.get('SPOTIFY_PENDING_PLAYLIST', '0')
 SCOPE = 'user-library-read playlist-modify-private playlist-modify-public'
-auth_manager = SpotifyImplicitGrant(redirect_uri='localhost:8080', scope=SCOPE)
+auth_manager = SpotifyImplicitGrant(redirect_uri='http://localhost:8080', scope=SCOPE)
 cache_token = auth_manager.get_access_token()
 spotify = Spotify(cache_token)
 
@@ -36,32 +36,30 @@ def get_all_items(response: Any):
         items += response['items']
     return items
 
-def get_playlist_items(playlist_id: str):
+def get_playlist_tracks(playlist_id: str):
     response = spotify.playlist_items(playlist_id)
     assert response is not None, "Problem with getting playlist items"
-    return get_all_items(response)
+    items = get_all_items(response)
+    return [item['track'] for item in items if item['track'] is not None]
 
-def get_album_items(album_id: str):
+def get_album_tracks(album_id: str):
     response = spotify.album_tracks(album_id)
     assert response is not None, "Problem with getting album items"
     return get_all_items(response)
 
-def id_is_safe(item: Optional[Item]):
-    if item is None:
-        return False
-    track = item['track']
+def id_is_safe(track: Optional[Track]):
     if track is None:
         return False
     return track['id'] is not None
 
 def get_tracks_ids(collection_id: str):
     if "playlist" in collection_id:
-        items = get_playlist_items(collection_id)
+        tracks = get_playlist_tracks(collection_id)
     elif "album" in collection_id:
-        items = get_album_items(collection_id)
+        tracks = get_album_tracks(collection_id)
     else:
-        items = get_playlist_items(collection_id)
-    return [item['track']['id'] for item in tqdm(items, 'Getting playlist tracks') if id_is_safe(item)]
+        tracks = get_playlist_tracks(collection_id)
+    return [track['id'] for track in tqdm(tracks, 'Getting playlist tracks') if id_is_safe(track)]
 
 def create_chunks(arr: List[T], chunk_size: int) -> Iterable[List[T]]:
     number_of_chunks = ceil(len(arr) / chunk_size)
