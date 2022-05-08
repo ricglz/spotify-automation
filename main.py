@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from math import ceil
-from typing import Any, Iterable, List, Optional, TypeVar, TypedDict
+from typing import Any, Iterable, List, Optional, Tuple, TypeVar, TypedDict
 from os import environ
 
 from spotipy import Spotify
@@ -22,11 +22,12 @@ class Track(TypedDict):
 class Item(TypedDict):
     track: Optional[Track]
 
-def get_collection_id() -> str:
+def get_collection_id() -> Tuple[str, bool]:
     parser = ArgumentParser(description='spotify-dl allows you to download your spotify songs')
     parser.add_argument('--collection', nargs=1, help="spotify playlist/album id", required=True)
+    parser.add_argument('--remove-saved', action='store_true')
     args = parser.parse_args()
-    return args.collection[0]
+    return (args.collection[0], args.remove_saved)
 
 def get_all_items(response: Any):
     items = response['items']
@@ -104,8 +105,9 @@ def remove_saved_songs_of_pending_playlist():
     print("Removed saved songs")
 
 def main():
-    remove_saved_songs_of_pending_playlist()
-    collection_id = get_collection_id()
+    collection_id, remove_saved = get_collection_id()
+    if remove_saved:
+        remove_saved_songs_of_pending_playlist()
     ids = get_tracks_ids(collection_id)
     unsaved_ids = filter_by_saved(ids)
     add_songs_to_pending_playlist(unsaved_ids)
