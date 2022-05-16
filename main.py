@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
-from math import ceil
-from typing import Iterable, List, Optional, Set, Tuple, TypeVar, TypedDict, Callable
+from typing import List, Optional, Set, Tuple, TypedDict, Callable
 from os import environ
+from utils import create_chunks
 
 from spotipy import Spotify
 from spotipy.exceptions import SpotifyException
@@ -13,8 +13,6 @@ SCOPE = 'user-library-read playlist-modify-private playlist-modify-public'
 auth_manager = SpotifyImplicitGrant(redirect_uri='http://localhost:8080', scope=SCOPE)
 cache_token = auth_manager.get_access_token()
 spotify = Spotify(cache_token)
-
-T = TypeVar('T')
 
 class Track(TypedDict):
     id: Optional[str]
@@ -75,13 +73,6 @@ def not_in_set(collection_id: str, set: Set[str]):
         if track is None: return False
         return id_is_safe(track) and track['id'] not in set
     return get_tracks_ids(collection_id, acceptable)
-
-def create_chunks(arr: List[T], chunk_size: int) -> Iterable[List[T]]:
-    number_of_chunks = ceil(len(arr) / chunk_size)
-    for chunk in range(number_of_chunks):
-        start = chunk * chunk_size
-        end = start + chunk_size
-        yield arr[start:end]
 
 def get_saved_ids(ids: List[str]):
     saved_ids: List[bool] = []
