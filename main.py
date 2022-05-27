@@ -97,6 +97,7 @@ def add_songs_to_pending_playlist(ids: List[str]):
             print(err)
 
 def remove_songs(ids: List[str], playlist_id: str):
+    print(f"Removing {len(ids)} songs")
     for chunk in create_chunks(ids, 100):
         try:
             spotify.playlist_remove_all_occurrences_of_items(playlist_id, chunk)
