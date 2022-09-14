@@ -11,10 +11,21 @@ auth_manager = SpotifyImplicitGrant(redirect_uri='http://localhost:8080', scope=
 cache_token = auth_manager.get_access_token()
 spotify = Spotify(cache_token)
 
-class Track(TypedDict):
-    id: Optional[str]
-
-class Item(TypedDict):
+class WithId(TypedDict):
+    id: str
+class Album(TypedDict):
+    '''Type for an artist'''
+    name: str
+class Artist(TypedDict):
+    '''Type for an artist'''
+    name: str
+class Track(WithId, TypedDict):
+    '''Type for a track'''
+    album: Album
+    artists: List[Artist]
+    id: str
+    name: str
+class Item(WithId, TypedDict):
     id: str
     track: Optional[Track]
 
@@ -72,3 +83,6 @@ def remove_songs_from_playlist(ids: List[str], playlist_id: str):
             spotify.playlist_remove_all_occurrences_of_items(playlist_id, chunk)
         except SpotifyException as err:
             print(err)
+
+def get_track(track_id: str) -> Optional[Track]:
+    return spotify.track(track_id)

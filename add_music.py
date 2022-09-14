@@ -3,19 +3,19 @@ from os import environ
 
 from tqdm import tqdm
 
-from spotify import Track, add_songs_to_playlist, get_saved_ids, \
+from spotify import WithId, add_songs_to_playlist, get_saved_ids, \
                     get_tracks, remove_songs_from_playlist
 
 PENDING_PLAYLIST = environ.get('SPOTIFY_PENDING_PLAYLIST', '0')
 
-def id_is_safe(track: Optional[Track]):
+def id_is_safe(track: Optional[WithId]):
     if track is None:
         return False
     return track['id'] is not None
 
 def get_tracks_ids(
     collection_id: str,
-    acceptable: Callable[[Optional[Track]], bool] = id_is_safe
+    acceptable: Callable[[Optional[WithId]], bool] = id_is_safe
 ) -> List[str]:
     print(f"Gettings tracks of {collection_id}")
     tracks = get_tracks(collection_id)
@@ -26,7 +26,7 @@ def get_tracks_ids(
     ]
 
 def non_duplicate_collection_tracks(collection_id: str, playlist_ids: Set[str]):
-    def acceptable(track: Optional[Track]):
+    def acceptable(track: Optional[WithId]):
         if track is None:
             return False
         return id_is_safe(track) and track['id'] not in playlist_ids
