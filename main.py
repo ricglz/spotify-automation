@@ -1,12 +1,13 @@
 from argparse import ArgumentParser
 from typing import List, Optional, Set, Tuple, TypedDict, Callable
 from os import environ
-from utils import create_chunks
 
 from spotipy import Spotify
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyImplicitGrant
 from tqdm import tqdm
+
+from utils import create_chunks
 
 PENDING_PLAYLIST = environ.get('SPOTIFY_PENDING_PLAYLIST', '0')
 SCOPE = 'user-library-read playlist-modify-private playlist-modify-public'
@@ -18,6 +19,7 @@ class Track(TypedDict):
     id: Optional[str]
 
 class Item(TypedDict):
+    id: str
     track: Optional[Track]
 
 class SpotifyResponse(TypedDict):
@@ -54,7 +56,10 @@ def id_is_safe(track: Optional[Track]):
         return False
     return track['id'] is not None
 
-def get_tracks_ids(collection_id: str, acceptable: Callable[[Optional[Track]], bool] = id_is_safe) -> List[str]:
+def get_tracks_ids(
+    collection_id: str,
+    acceptable: Callable[[Optional[Track]], bool] = id_is_safe
+) -> List[str]:
     print(f"Gettings tracks of {collection_id}")
     if "playlist" in collection_id:
         tracks = get_playlist_tracks(collection_id)
@@ -65,13 +70,14 @@ def get_tracks_ids(collection_id: str, acceptable: Callable[[Optional[Track]], b
     return [
         track['id']
         for track in tqdm(tracks, 'Getting playlist tracks')
-        if acceptable(track)
+        if acceptable(track) and track['id'] is not None
     ]
 
-def not_in_set(collection_id: str, set: Set[str]):
+def not_in_set(collection_id: str, my_set: Set[str]):
     def acceptable(track: Optional[Track]):
-        if track is None: return False
-        return id_is_safe(track) and track['id'] not in set
+        if track is None:
+            return False
+        return id_is_safe(track) and track['id'] not in my_set
     return get_tracks_ids(collection_id, acceptable)
 
 def get_saved_ids(ids: List[str]):
