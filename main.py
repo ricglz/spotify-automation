@@ -73,11 +73,11 @@ def get_tracks_ids(
         if acceptable(track) and track['id'] is not None
     ]
 
-def not_in_set(collection_id: str, my_set: Set[str]):
+def non_duplicate_collection_tracks(collection_id: str, playlist_ids: Set[str]):
     def acceptable(track: Optional[Track]):
         if track is None:
             return False
-        return id_is_safe(track) and track['id'] not in my_set
+        return id_is_safe(track) and track['id'] not in playlist_ids
     return get_tracks_ids(collection_id, acceptable)
 
 def get_saved_ids(ids: List[str]):
@@ -121,7 +121,7 @@ def main():
     playlist_ids = get_tracks_ids(PENDING_PLAYLIST)
     if remove_saved:
         remove_saved_songs_of_pending_playlist(playlist_ids)
-    ids = not_in_set(collection_id, set(playlist_ids))
+    ids = non_duplicate_collection_tracks(collection_id, set(playlist_ids))
     unsaved_ids = filter_by_saved(ids)
     add_songs_to_pending_playlist(unsaved_ids)
 
