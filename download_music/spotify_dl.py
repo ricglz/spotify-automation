@@ -16,7 +16,7 @@ from tqdm import tqdm
 from ytmusicapi import YTMusic
 
 from spotify import get_playlist_tracks, get_track
-from storage import Storage
+from download_music.storage import Storage
 from terminal_utils import ACTION, ERROR
 
 #=======================

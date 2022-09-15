@@ -6,7 +6,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from song_model import BaseModel, SongModel
+from download_music.song_model import BaseModel, SongModel
 
 @contextmanager
 def create_scoped_session(
