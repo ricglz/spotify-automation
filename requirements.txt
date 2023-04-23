@@ -1,5 +1,5 @@
 psycopg2==2.9.3
-spotipy==2.19.0
+spotipy==2.23.0
 sqlalchemy==1.4.32
 tqdm==4.64.0
 ytmusicapi==0.21.0
