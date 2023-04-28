@@ -19,19 +19,19 @@ from spotify import get_playlist_tracks, get_track
 from download_music.storage import Storage
 from terminal_utils import ACTION, ERROR
 
-#=======================
+# =======================
 #   Youtube application
-#=======================
+# =======================
 yt_music = YTMusic()
 
-#=======================
+# =======================
 #   Other constants
-#=======================
-storage = Storage(environ.get('SPOTIFY_DATABASE', ''))
+# =======================
+storage: Optional[Storage] = None
 
-#=======================
+# =======================
 #   Types
-#=======================
+# =======================
 TrackInfo = Tuple[str, str, str]
 class Album(TypedDict):
     '''Type for an artist'''
@@ -49,10 +49,10 @@ class Item(TypedDict):
     '''Type for a track'''
     track: Track
 
-#=======================
+# =======================
 #   Actual code
-#=======================
-def get_tracks(args: Namespace) -> Optional[List[Track]]:
+# =======================
+def get_tracks(args: Namespace):
     '''Gets a list of tracks based if is a single track or a list of them'''
     if args.track:
         track = get_track(args.track[0])
@@ -91,6 +91,7 @@ def get_youtube_link(track: Track):
 
 def get_link(track: Track) -> str:
     '''Gets the link of a track'''
+    assert storage is not None
     try:
         link = storage.get_link(track['id'])
     except KeyError:
@@ -99,7 +100,7 @@ def get_link(track: Track) -> str:
             storage.store_link(track['id'], link)
     return link
 
-def get_links(tracks: List[Track]) -> Iterable[str]:
+def get_links(tracks: List[Track]):
     '''Gets the links of the tracks'''
     with ThreadPoolExecutor() as executor:
         pool_iterator = tqdm(
@@ -127,9 +128,12 @@ def handle_links_in_tmp_file(links: Iterable[str]):
 
 def download_music(args: Namespace):
     """Main process"""
+    global storage
+
+    storage = Storage(environ.get('SPOTIFY_DATABASE', ''))
     tracks = get_tracks(args)
     if tracks is None:
         print(f'{ERROR} use --help for help')
         return
-    links = get_links(tracks)
+    links = get_links(list(tracks))
     handle_links_in_tmp_file(links)
