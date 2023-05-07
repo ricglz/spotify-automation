@@ -40,7 +40,7 @@ def filter_by_saved(ids: List[str], get_saved=False):
     return [
         ids[idx]
         for idx, saved in enumerate(saved_ids)
-        if (saved if get_saved else not saved)
+        if saved != get_saved
     ]
 
 def add_songs_to_pending_playlist(ids: List[str]):

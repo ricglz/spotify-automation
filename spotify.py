@@ -1,5 +1,5 @@
 import re
-from typing import Iterable, List, Optional, TypedDict, TypeVar
+from typing import Iterable, Iterator, List, Optional, TypedDict, TypeVar
 
 from spotipy import Spotify
 from spotipy.exceptions import SpotifyException
@@ -62,8 +62,8 @@ def get_playlist_tracks(playlist_id: str):
             yield track
 
 def flatten(iterator: Iterable[Iterable[T]]) -> Iterable[T]:
-    for list in iterator:
-        for element in list:
+    for inner_iterator in iterator:
+        for element in inner_iterator:
             yield element
 
 def get_playlist_artists(playlist_id: str):
@@ -105,15 +105,12 @@ def get_tracks(collection_id: str):
         return get_album_tracks(collection_id)
     return get_playlist_tracks(collection_id)
 
-def get_saved_ids(ids: List[str]):
-    saved_ids: List[bool] = []
+def get_saved_ids(ids: Iterable[str]) -> Iterator[bool]:
     for chunk in create_chunks(ids, 50):
         response = spotify.current_user_saved_tracks_contains(chunk)
-        saved_ids += [True] * 50 if response is None else response
-    if len(saved_ids) != len(ids):
-        # TODO: Throw exception
-        raise Exception()
-    return saved_ids
+        saved_data = [True] * len(chunk) if response is None else response
+        for data in saved_data:
+            yield data
 
 def add_songs_to_playlist(ids: List[str], playlist_id: str):
     print(f"Adding {len(ids)} songs")
