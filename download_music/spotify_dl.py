@@ -111,20 +111,23 @@ def get_links(tracks: List[Track]):
     return set(filter(lambda x: x != '', pool_iterator))
 
 def download_youtube(batch_filename: str):
-    """Downloading the track"""
+    """
+    Based on the given batch file, it will use the add music command
+    (which currently is expected to be a yt-dl variant) to download
+    said music from youtube.
+    """
     print(f'{ACTION} downloading song...')
     run(['add_music', '--batch-file', batch_filename], check=False)
 
 def write_links_in_file(file: TextIO, links: Iterable[str]):
-    for link in tqdm(links, desc='Writting file'):
+    for link in tqdm(links, desc='Writting links in temp file'):
         file.write(f'{link}\n')
 
-def handle_links_in_tmp_file(links: Iterable[str]):
+def create_tmp_file_with_links(links: Iterable[str]) -> str:
     filename = path.expanduser("~/Music/legal/temp.txt")
     with open(filename, 'w', encoding='utf-8') as file:
         write_links_in_file(file, links)
-    download_youtube(filename)
-    remove(filename)
+    return filename
 
 def download_music(args: Namespace):
     """Main process"""
@@ -136,4 +139,6 @@ def download_music(args: Namespace):
         print(f'{ERROR} use --help for help')
         return
     links = get_links(list(tracks))
-    handle_links_in_tmp_file(links)
+    filename = create_tmp_file_with_links(links)
+    download_youtube(filename)
+    remove(filename)
