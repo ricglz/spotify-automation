@@ -1,2 +1,3 @@
 .cache
 artists.txt
+__pycache__/
