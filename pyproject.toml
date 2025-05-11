@@ -1,0 +1,12 @@
+[project]
+name = "spotify-automation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "spotipy==2.23.0",
+    "sqlalchemy==1.4.32",
+    "tqdm==4.64.0",
+    "ytmusicapi==0.21.0",
+]
